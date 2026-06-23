@@ -6,7 +6,7 @@ import {
   SEED_WEEKLY_REVENUE,
   SEED_WEEK_LABELS,
   WHITE,
-} from "./AppContext";
+} from "./theme";
 
 export const Toast = ({
   msg,

@@ -1,211 +1,133 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useMemo } from "react";
-import {
-  Platform,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useApp } from "../../context/AppContext";
 import {
   BLACK,
   GRAY_DARK,
   GRAY_LIGHT,
   GRAY_MID,
-  SCROLL_EXTRA_PADDING,
-  SEED_BASE_EXPENSES,
-  SEED_BASE_REVENUE,
-  SEED_WEEKLY_REVENUE,
-  SEED_WEEK_LABELS,
-  TAB_MENU_HEIGHT,
-  WEB_TAB_MENU_PADDING,
+  TAB_HEIGHT,
   WHITE,
-  useApp,
-} from "../context/AppContext";
-import { BarChart, Toast } from "../context/components";
+} from "../../context/theme";
 
 export default function DashboardScreen() {
   const app = useApp();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const todayRevenue = useMemo(
-    () => SEED_BASE_REVENUE + app.extraRevenue,
-    [app.extraRevenue],
-  );
-  const todayExpenses = useMemo(
-    () => SEED_BASE_EXPENSES + app.extraExpenses,
-    [app.extraExpenses],
-  );
-  const todayProfit = todayRevenue - todayExpenses;
-  const weeklyRevenue = useMemo(() => {
-    const arr = [...SEED_WEEKLY_REVENUE];
-    arr[arr.length - 1] += app.extraRevenue;
-    return arr;
-  }, [app.extraRevenue]);
-  const weeklyTotal = weeklyRevenue.reduce((s, v) => s + v, 0);
-  const lowStockCount = app.inventory.filter((i) => i.is_low_stock).length;
-  const scrollBottomPadding =
-    Platform.OS === "web"
-      ? WEB_TAB_MENU_PADDING
-      : TAB_MENU_HEIGHT + insets.bottom + SCROLL_EXTRA_PADDING;
-  const dateStr = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-  const fmt = (n: number) => n.toLocaleString() + " RWF";
-
   return (
     <View style={{ flex: 1, backgroundColor: WHITE }}>
       {/* Header */}
       <View
         style={{
-          backgroundColor: WHITE,
           paddingTop: insets.top + 12,
-          paddingBottom: 14,
           paddingHorizontal: 20,
+          paddingBottom: 12,
           flexDirection: "row",
-          alignItems: "center",
           justifyContent: "space-between",
-          borderBottomWidth: 1,
-          borderBottomColor: GRAY_MID,
+          alignItems: "center",
         }}
       >
-        <View>
-          <Text style={{ fontSize: 17, fontWeight: "800", color: BLACK }}>
-            {app.t.welcome}
-          </Text>
-          <Text style={{ fontSize: 11, color: GRAY_DARK, marginTop: 2 }}>
-            {dateStr}
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => app.setLang(app.lang === "en" ? "kin" : "en")}
-          style={{
-            flexDirection: "row",
-            backgroundColor: GRAY_LIGHT,
-            borderRadius: 6,
-            borderWidth: 1,
-            borderColor: GRAY_MID,
-            overflow: "hidden",
-          }}
-        >
-          {["en", "kin"].map((l) => (
-            <View
-              key={l}
-              style={{
-                paddingHorizontal: 8,
-                paddingVertical: 5,
-                backgroundColor: app.lang === l ? BLACK : "transparent",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 11,
-                  fontWeight: "700",
-                  color: app.lang === l ? WHITE : GRAY_DARK,
-                }}
-              >
-                {l.toUpperCase()}
-              </Text>
-            </View>
-          ))}
+        <MaterialIcons name="menu" size={24} color={BLACK} />
+        <Text style={{ fontSize: 18, fontWeight: "900", color: BLACK }}>
+          SmartLedger
+        </Text>
+        <TouchableOpacity onPress={() => router.push("../settings")}>
+          <MaterialIcons name="account-circle" size={28} color={BLACK} />
         </TouchableOpacity>
       </View>
 
       <ScrollView
-        style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingTop: 20,
-          paddingBottom: scrollBottomPadding,
-          paddingHorizontal: 16,
+          paddingHorizontal: 20,
+          paddingBottom: TAB_HEIGHT + insets.bottom + 20,
         }}
       >
-        {/* Revenue Card */}
+        {/* Date + greeting */}
+        <Text
+          style={{
+            fontSize: 11,
+            color: GRAY_DARK,
+            textTransform: "uppercase",
+            letterSpacing: 1,
+          }}
+        >
+          Monday, 24 May 2024
+        </Text>
+        <Text
+          style={{
+            fontSize: 28,
+            fontWeight: "900",
+            color: BLACK,
+            marginTop: 2,
+          }}
+        >
+          Good morning,{"\n"}
+          {app.userName}
+        </Text>
+
+        {/* Revenue card */}
         <View
           style={{
-            backgroundColor: BLACK,
+            backgroundColor: GRAY_LIGHT,
             borderRadius: 16,
-            padding: 24,
-            marginBottom: 14,
-            shadowColor: BLACK,
-            shadowOffset: { width: 0, height: 6 },
-            shadowOpacity: 0.18,
-            shadowRadius: 12,
-            elevation: 8,
+            padding: 20,
+            marginTop: 20,
+            borderWidth: 1,
+            borderColor: GRAY_MID,
           }}
         >
           <Text
             style={{
-              fontSize: 12,
-              color: "rgba(255,255,255,0.65)",
-              fontWeight: "500",
-              letterSpacing: 0.8,
+              fontSize: 11,
+              color: GRAY_DARK,
               textTransform: "uppercase",
-              marginBottom: 6,
+              letterSpacing: 0.8,
             }}
           >
-            {app.t.revenue}
+            Today's Revenue
           </Text>
           <Text
             style={{
               fontSize: 36,
               fontWeight: "900",
-              color: WHITE,
-              letterSpacing: -1,
+              color: BLACK,
+              marginTop: 4,
             }}
           >
-            {fmt(todayRevenue)}
+            RWF 458,200
+          </Text>
+          <Text style={{ color: GRAY_DARK, fontSize: 12, marginTop: 4 }}>
+            vs RWF 350,000 yesterday
           </Text>
           <View
             style={{
-              height: 1,
-              backgroundColor: "rgba(255,255,255,0.15)",
-              marginVertical: 14,
-            }}
-          />
-          <Text
-            style={{
-              fontSize: 12,
-              color: "rgba(255,255,255,0.65)",
-              fontWeight: "500",
-              letterSpacing: 0.8,
-              textTransform: "uppercase",
-              marginBottom: 4,
+              position: "absolute",
+              top: 20,
+              right: 20,
+              backgroundColor: BLACK,
+              borderRadius: 20,
+              paddingHorizontal: 10,
+              paddingVertical: 4,
             }}
           >
-            {app.t.profit}
-          </Text>
-          <Text style={{ fontSize: 22, fontWeight: "800", color: WHITE }}>
-            {fmt(todayProfit)}
-          </Text>
+            <Text style={{ color: WHITE, fontSize: 12, fontWeight: "700" }}>
+              72%
+            </Text>
+          </View>
         </View>
 
-        {/* Stats Row */}
-        <View style={{ flexDirection: "row", marginBottom: 14, gap: 8 }}>
+        {/* Stats row */}
+        <View style={{ flexDirection: "row", marginTop: 12, gap: 8 }}>
           {[
-            {
-              icon: "trending-up",
-              value: fmt(weeklyTotal),
-              label: app.t.weekly_sales,
-            },
-            {
-              icon: "account-balance-wallet",
-              value: "8,500 RWF",
-              label: app.t.outstanding,
-            },
-            {
-              icon: "inventory",
-              value: String(lowStockCount),
-              label: app.t.low_stock,
-            },
-          ].map((stat, i) => (
+            { label: "Sales", value: "42", sub: "Orders" },
+            { label: "Debts", value: "12", sub: "Pending" },
+            { label: "Low Stock", value: "08", sub: "", alert: true },
+          ].map((s) => (
             <View
-              key={i}
+              key={s.label}
               style={{
                 flex: 1,
                 backgroundColor: GRAY_LIGHT,
@@ -215,82 +137,122 @@ export default function DashboardScreen() {
                 borderColor: GRAY_MID,
               }}
             >
-              <MaterialIcons name={stat.icon as any} size={18} color={BLACK} />
+              <Text style={{ fontSize: 11, color: GRAY_DARK }}>{s.label}</Text>
               <Text
                 style={{
-                  fontSize: 15,
-                  fontWeight: "800",
+                  fontSize: 22,
+                  fontWeight: "900",
                   color: BLACK,
-                  marginTop: 6,
+                  marginTop: 4,
                 }}
               >
-                {stat.value}
+                {s.value}
               </Text>
-              <Text
-                style={{
-                  fontSize: 10,
-                  color: GRAY_DARK,
-                  marginTop: 2,
-                  fontWeight: "500",
-                }}
-              >
-                {stat.label}
-              </Text>
+              <Text style={{ fontSize: 10, color: GRAY_DARK }}>{s.sub}</Text>
             </View>
           ))}
         </View>
 
-        {/* Chart */}
+        {/* 7-Day Trend chart placeholder */}
         <View
           style={{
             backgroundColor: WHITE,
             borderRadius: 12,
             padding: 16,
+            marginTop: 12,
             borderWidth: 1,
             borderColor: GRAY_MID,
-            marginBottom: 16,
           }}
         >
           <View
             style={{
               flexDirection: "row",
               justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 8,
+              marginBottom: 12,
             }}
           >
-            <Text style={{ fontSize: 13, fontWeight: "700", color: BLACK }}>
-              7-Day Revenue Trend
-            </Text>
-            <Text style={{ fontSize: 11, color: GRAY_DARK }}>Last 7 days</Text>
+            <Text style={{ fontWeight: "700", color: BLACK }}>7-Day Trend</Text>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+            >
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: BLACK,
+                }}
+              />
+              <Text style={{ fontSize: 11, color: GRAY_DARK }}>Revenue</Text>
+            </View>
           </View>
-          <BarChart data={weeklyRevenue} labels={SEED_WEEK_LABELS} />
+          {/* Replace with a real LineChart from victory-native or react-native-svg-charts */}
+          <View
+            style={{
+              height: 100,
+              backgroundColor: GRAY_LIGHT,
+              borderRadius: 8,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: GRAY_DARK, fontSize: 12 }}>
+              Line chart goes here
+            </Text>
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginTop: 8,
+            }}
+          >
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+              <Text key={d} style={{ fontSize: 10, color: GRAY_DARK }}>
+                {d}
+              </Text>
+            ))}
+          </View>
         </View>
 
-        {/* Quick Record Button */}
-        <TouchableOpacity
-          onPress={() => router.push("/(tabs)/record")}
-          style={{
-            backgroundColor: BLACK,
-            borderRadius: 10,
-            paddingVertical: 14,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-          }}
-        >
-          <MaterialIcons name="add-circle-outline" size={20} color={WHITE} />
-          <Text style={{ color: WHITE, fontSize: 14, fontWeight: "700" }}>
-            {app.t.record} Transaction
-          </Text>
-        </TouchableOpacity>
+        {/* Quick action buttons */}
+        <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/record")}
+            style={{
+              flex: 1,
+              backgroundColor: BLACK,
+              borderRadius: 10,
+              paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            }}
+          >
+            <MaterialIcons name="add-circle-outline" size={18} color={WHITE} />
+            <Text style={{ color: WHITE, fontWeight: "700" }}>New Sale</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/inventory")}
+            style={{
+              flex: 1,
+              backgroundColor: WHITE,
+              borderRadius: 10,
+              paddingVertical: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              borderWidth: 1.5,
+              borderColor: BLACK,
+            }}
+          >
+            <MaterialIcons name="inventory" size={18} color={BLACK} />
+            <Text style={{ color: BLACK, fontWeight: "700" }}>Stock Count</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
-
-      <Toast
-        msg={app.toastMsg}
-        bottomOffset={TAB_MENU_HEIGHT + insets.bottom + 16}
-      />
     </View>
   );
 }

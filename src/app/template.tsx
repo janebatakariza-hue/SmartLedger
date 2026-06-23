@@ -1,129 +1,111 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  ScrollView,
-  StatusBar,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BLACK, GRAY_DARK, GRAY_MID, WHITE } from "./context/AppContext";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { BLACK, GRAY_DARK, GRAY_MID, WHITE } from "../context/theme";
 
 const TEMPLATES = [
-  {
-   
-    id: "retail",
-    label: "Retail Shop",
-    icon: "storefront",
-    desc: "General merchandise, groceries",
-  },
+  { id: "retail", label: "Retail", sub: "Shops, Kiosks", icon: "storefront" },
   {
     id: "restaurant",
     label: "Restaurant",
+    sub: "Cafes, Bars",
     icon: "restaurant",
-    desc: "Food service & eateries",
   },
   {
     id: "pharmacy",
     label: "Pharmacy",
+    sub: "Clinics, Labs",
     icon: "local-pharmacy",
-    desc: "Medicine & health products",
   },
   {
-    id: "salon",
-    label: "Salon",
-    icon: "content-cut",
-    desc: "Beauty & hair services",
+    id: "agriculture",
+    label: "Agriculture",
+    sub: "Farming, Livestock",
+    icon: "agriculture",
+  },
+  { id: "salon", label: "Salon", sub: "Beauty, Barber", icon: "content-cut" },
+  { id: "school", label: "School", sub: "Tutoring, Daycare", icon: "school" },
+  {
+    id: "cooperative",
+    label: "Cooperative",
+    sub: "Savings, SACCOs",
+    icon: "groups",
+  },
+  {
+    id: "services",
+    label: "Services",
+    sub: "Freelance, Consulting",
+    icon: "work",
   },
 ];
 
 export default function TemplateScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState("retail");
 
   return (
     <View style={{ flex: 1, backgroundColor: WHITE }}>
-      <StatusBar barStyle="dark-content" backgroundColor={WHITE} />
       <View
-        style={{
-          backgroundColor: WHITE,
-          paddingTop: insets.top + 16,
-          paddingBottom: 16,
-          paddingHorizontal: 20,
-          borderBottomWidth: 1,
-          borderBottomColor: GRAY_MID,
-        }}
+        style={{ paddingTop: 60, paddingHorizontal: 24, paddingBottom: 20 }}
       >
-        <Text
-          style={{
-            fontSize: 22,
-            fontWeight: "900",
-            color: BLACK,
-            letterSpacing: -0.5,
-          }}
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{ marginBottom: 20 }}
         >
-          {"What kind of business\ndo you run?"}
+          <Text style={{ color: BLACK, fontSize: 18 }}>←</Text>
+        </TouchableOpacity>
+        <Text style={{ fontSize: 28, fontWeight: "900", color: BLACK }}>
+          Setup your ledger
         </Text>
-        <Text style={{ fontSize: 13, color: GRAY_DARK, marginTop: 6 }}>
-          Select your business type to load demo data
+        <Text style={{ color: GRAY_DARK, marginTop: 6 }}>
+          Choose a template that best fits your business operations.
         </Text>
       </View>
 
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 140 }}
       >
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-          {TEMPLATES.map((tmpl) => {
-            const isSelected = selected === tmpl.id;
+          {TEMPLATES.map((t) => {
+            const isSel = selected === t.id;
             return (
               <TouchableOpacity
-                key={tmpl.id}
-                onPress={() => setSelected(tmpl.id)}
+                key={t.id}
+                onPress={() => setSelected(t.id)}
                 style={{
                   width: "47%",
-                  backgroundColor: isSelected ? BLACK : WHITE,
+                  backgroundColor: isSel ? BLACK : WHITE,
                   borderRadius: 12,
-                  borderWidth: isSelected ? 2 : 1.5,
-                  borderColor: isSelected ? BLACK : GRAY_MID,
-                  padding: 20,
-                  alignItems: "center",
-                  marginBottom: 4,
-                  shadowColor: BLACK,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: isSelected ? 0.15 : 0.05,
-                  shadowRadius: 6,
-                  elevation: isSelected ? 4 : 1,
+                  borderWidth: 1.5,
+                  borderColor: isSel ? BLACK : GRAY_MID,
+                  padding: 18,
+                  alignItems: "flex-start",
                 }}
               >
                 <MaterialIcons
-                  name={tmpl.icon as any}
-                  size={36}
-                  color={isSelected ? WHITE : BLACK}
+                  name={t.icon as any}
+                  size={28}
+                  color={isSel ? WHITE : BLACK}
                 />
                 <Text
                   style={{
                     fontSize: 14,
                     fontWeight: "700",
-                    color: isSelected ? WHITE : BLACK,
+                    color: isSel ? WHITE : BLACK,
                     marginTop: 10,
-                    textAlign: "center",
                   }}
                 >
-                  {tmpl.label}
+                  {t.label}
                 </Text>
                 <Text
                   style={{
                     fontSize: 11,
-                    color: isSelected ? "rgba(255,255,255,0.7)" : GRAY_DARK,
-                    marginTop: 4,
-                    textAlign: "center",
+                    color: isSel ? "rgba(255,255,255,0.6)" : GRAY_DARK,
+                    marginTop: 2,
                   }}
                 >
-                  {tmpl.desc}
+                  {t.sub}
                 </Text>
               </TouchableOpacity>
             );
@@ -134,9 +116,10 @@ export default function TemplateScreen() {
       <View
         style={{
           position: "absolute",
-          bottom: insets.bottom + 16,
-          left: 20,
-          right: 20,
+          bottom: 32,
+          left: 24,
+          right: 24,
+          gap: 12,
         }}
       >
         <TouchableOpacity
@@ -146,23 +129,33 @@ export default function TemplateScreen() {
             borderRadius: 10,
             paddingVertical: 16,
             alignItems: "center",
-            shadowColor: BLACK,
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.2,
-            shadowRadius: 8,
-            elevation: 6,
           }}
         >
-          <Text
-            style={{
-              color: WHITE,
-              fontSize: 15,
-              fontWeight: "700",
-              letterSpacing: 0.5,
-            }}
-          >
-            Load {TEMPLATES.find((t) => t.id === selected)?.label} Demo →
+          <Text style={{ color: WHITE, fontWeight: "700", fontSize: 15 }}>
+            Apply Template
           </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{
+            borderWidth: 1,
+            borderColor: GRAY_MID,
+            borderRadius: 10,
+            paddingVertical: 14,
+            paddingHorizontal: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View>
+            <Text style={{ fontWeight: "600", color: BLACK, fontSize: 13 }}>
+              Need a custom setup?
+            </Text>
+            <Text style={{ color: GRAY_DARK, fontSize: 11 }}>
+              Start with a blank ledger instead.
+            </Text>
+          </View>
+          <Text style={{ color: BLACK, fontSize: 18 }}>+</Text>
         </TouchableOpacity>
       </View>
     </View>

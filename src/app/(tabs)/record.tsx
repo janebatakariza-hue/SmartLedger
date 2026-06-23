@@ -1,9 +1,6 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -11,110 +8,63 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useApp } from "../../context/AppContext";
 import {
   BLACK,
-  EXPENSE_CATEGORIES,
   GRAY_DARK,
   GRAY_LIGHT,
   GRAY_MID,
-  SCROLL_EXTRA_PADDING,
-  TAB_MENU_HEIGHT,
-  useApp,
-  WEB_TAB_MENU_PADDING,
+  TAB_HEIGHT,
   WHITE,
-} from "../context/AppContext";
+} from "../../context/theme";
 
 export default function RecordScreen() {
   const app = useApp();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<"sale" | "expense">("sale");
-  const [selectedProductId, setSelectedProductId] = useState(
-    app.inventory[0]?.id || "",
-  );
-  const [qty, setQty] = useState(1);
-  const [selectedCat, setSelectedCat] = useState(EXPENSE_CATEGORIES[0]);
-  const [amt, setAmt] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [expenseAmt, setExpenseAmt] = useState("");
+  const [expenseCat, setExpenseCat] = useState("Supplies");
+  const [note, setNote] = useState("");
 
-  const scrollBottomPadding =
-    Platform.OS === "web"
-      ? WEB_TAB_MENU_PADDING
-      : TAB_MENU_HEIGHT + insets.bottom + SCROLL_EXTRA_PADDING;
-  const selectedProduct =
-    app.inventory.find((i) => i.id === selectedProductId) || app.inventory[0];
-  const calcTotal = selectedProduct ? selectedProduct.unit_price * qty : 0;
+  const runningTotal = app.inventory.reduce((sum, item) => {
+    return sum + (quantities[item.id] || 0) * item.unit_price;
+  }, 0);
+  const itemsSelected = Object.values(quantities).filter((q) => q > 0).length;
 
-  const saveSale = () => {
-    if (!selectedProduct || qty < 1) return;
-    if (selectedProduct.quantity_on_hand < qty) {
-      Platform.OS === "web"
-        ? window.alert("Not enough stock")
-        : Alert.alert("Error", "Not enough stock");
-      return;
-    }
-    setLoading(true);
-    const newQty = selectedProduct.quantity_on_hand - qty;
-    app.setInventory((prev) =>
-      prev.map((item) =>
-        item.id === selectedProduct.id
-          ? {
-              ...item,
-              quantity_on_hand: newQty,
-              is_low_stock: newQty <= item.low_stock_threshold,
-            }
-          : item,
-      ),
-    );
-    app.setExtraRevenue((prev) => prev + calcTotal);
-    setTimeout(() => {
-      setLoading(false);
-      setQty(1);
-      app.showToast("Sale recorded! Inventory updated.");
-      router.push("/(tabs)/dashboard");
-    }, 500);
-  };
-
-  const saveExpense = () => {
-    const parsed = parseInt(amt, 10);
-    if (!amt || isNaN(parsed) || parsed <= 0) {
-      Platform.OS === "web"
-        ? window.alert("Enter a valid amount")
-        : Alert.alert("Error", "Enter a valid amount");
-      return;
-    }
-    setLoading(true);
-    app.setExtraExpenses((prev) => prev + parsed);
-    setTimeout(() => {
-      setLoading(false);
-      setAmt("");
-      app.showToast("Expense saved successfully!");
-      router.push("/(tabs)/dashboard");
-    }, 500);
-  };
+  const EXPENSE_CATS = [
+    { id: "supplies", label: "Supplies", icon: "shopping-bag" },
+    { id: "rent", label: "Rent", icon: "home" },
+    { id: "wages", label: "Wages", icon: "people" },
+    { id: "utilities", label: "Utilities", icon: "bolt" },
+    { id: "others", label: "Others", icon: "more-horiz" },
+  ];
 
   return (
     <View style={{ flex: 1, backgroundColor: WHITE }}>
-      {/* Header & Tabs */}
+      {/* Header */}
       <View
         style={{
-          backgroundColor: WHITE,
           paddingTop: insets.top + 14,
           paddingHorizontal: 20,
           borderBottomWidth: 1,
           borderBottomColor: GRAY_MID,
         }}
       >
-        <Text
+        <View
           style={{
-            fontSize: 20,
-            fontWeight: "900",
-            color: BLACK,
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
             marginBottom: 16,
           }}
         >
-          Record Transaction
-        </Text>
+          <Text style={{ fontSize: 20, fontWeight: "900", color: BLACK }}>
+            {activeTab === "sale" ? "Record Sale" : "Record"}
+          </Text>
+          <MaterialIcons name="account-circle" size={28} color={BLACK} />
+        </View>
+        {/* Tabs */}
         <View style={{ flexDirection: "row", marginBottom: -1 }}>
           {(["sale", "expense"] as const).map((tab) => (
             <TouchableOpacity
@@ -124,341 +74,358 @@ export default function RecordScreen() {
                 flex: 1,
                 paddingVertical: 12,
                 alignItems: "center",
-                backgroundColor: activeTab === tab ? BLACK : WHITE,
-                borderTopLeftRadius: 8,
-                borderTopRightRadius: 8,
-                borderWidth: 1,
-                borderBottomWidth: activeTab === tab ? 0 : 1,
-                borderColor: activeTab === tab ? BLACK : GRAY_MID,
-                marginRight: tab === "sale" ? 4 : 0,
-                marginLeft: tab === "expense" ? 4 : 0,
+                borderBottomWidth: 2,
+                borderBottomColor: activeTab === tab ? BLACK : "transparent",
               }}
             >
               <Text
                 style={{
                   fontWeight: "700",
-                  color: activeTab === tab ? WHITE : BLACK,
-                  fontSize: 13,
+                  color: activeTab === tab ? BLACK : GRAY_DARK,
+                  fontSize: 14,
                 }}
               >
-                {tab === "sale" ? app.t.record_sale : app.t.record_expense}
+                {tab === "sale" ? "Sale" : "Expense"}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
       </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          padding: 20,
-          paddingBottom: scrollBottomPadding,
-        }}
-      >
-        {activeTab === "sale" ? (
-          <View>
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "600",
-                color: GRAY_DARK,
-                marginBottom: 8,
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-            >
-              {app.t.product}
+      {activeTab === "sale" ? (
+        <>
+          <ScrollView
+            contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
+          >
+            <Text style={{ fontSize: 13, color: GRAY_DARK, marginBottom: 12 }}>
+              Select items and adjust quantities to track daily revenue.
             </Text>
-            <View
-              style={{
-                borderWidth: 1.5,
-                borderColor: GRAY_MID,
-                borderRadius: 10,
-                marginBottom: 16,
-                backgroundColor: GRAY_LIGHT,
-              }}
-            >
-              {app.inventory.map((item) => {
-                const isSel = item.id === selectedProductId;
-                return (
-                  <TouchableOpacity
-                    key={item.id}
-                    onPress={() => setSelectedProductId(item.id)}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      padding: 14,
-                      backgroundColor: isSel ? BLACK : "transparent",
-                      borderRadius: 8,
-                      margin: 4,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 9,
-                        borderWidth: 2,
-                        borderColor: isSel ? WHITE : GRAY_DARK,
-                        backgroundColor: isSel ? WHITE : "transparent",
-                        marginRight: 10,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {isSel && (
-                        <View
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: BLACK,
-                          }}
-                        />
-                      )}
-                    </View>
-                    <Text
-                      style={{
-                        flex: 1,
-                        fontSize: 14,
-                        fontWeight: "600",
-                        color: isSel ? WHITE : BLACK,
-                      }}
-                    >
-                      {item.name}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: isSel ? "rgba(255,255,255,0.7)" : GRAY_DARK,
-                      }}
-                    >
-                      {item.unit_price.toLocaleString()} RWF
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "600",
-                color: GRAY_DARK,
-                marginBottom: 8,
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-            >
-              {app.t.quantity}
-            </Text>
+            {/* Search */}
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                marginBottom: 16,
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => qty > 1 && setQty(qty - 1)}
-                style={{
-                  width: 44,
-                  height: 44,
-                  backgroundColor: GRAY_LIGHT,
-                  borderRadius: 10,
-                  borderWidth: 1.5,
-                  borderColor: GRAY_MID,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <MaterialIcons name="remove" size={20} color={BLACK} />
-              </TouchableOpacity>
-              <View style={{ flex: 1, alignItems: "center" }}>
-                <Text style={{ fontSize: 24, fontWeight: "900", color: BLACK }}>
-                  {qty}
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setQty(qty + 1)}
-                style={{
-                  width: 44,
-                  height: 44,
-                  backgroundColor: BLACK,
-                  borderRadius: 10,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <MaterialIcons name="add" size={20} color={WHITE} />
-              </TouchableOpacity>
-            </View>
-
-            <View
-              style={{
                 backgroundColor: GRAY_LIGHT,
                 borderRadius: 10,
-                padding: 16,
-                marginBottom: 24,
+                paddingHorizontal: 12,
+                marginBottom: 16,
                 borderWidth: 1,
                 borderColor: GRAY_MID,
               }}
             >
-              <Text
-                style={{ fontSize: 12, color: GRAY_DARK, fontWeight: "500" }}
-              >
-                {app.t.total}
-              </Text>
-              <Text
+              <MaterialIcons name="search" size={18} color={GRAY_DARK} />
+              <TextInput
+                placeholder="Search products..."
                 style={{
-                  fontSize: 28,
-                  fontWeight: "900",
+                  flex: 1,
+                  paddingVertical: 10,
+                  paddingLeft: 8,
                   color: BLACK,
-                  marginTop: 4,
                 }}
-              >
-                {calcTotal.toLocaleString()} RWF
-              </Text>
+              />
             </View>
-
-            <TouchableOpacity
-              onPress={saveSale}
-              disabled={loading}
-              style={{
-                backgroundColor: loading ? GRAY_MID : BLACK,
-                borderRadius: 10,
-                paddingVertical: 16,
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ color: WHITE, fontSize: 15, fontWeight: "700" }}>
-                {loading ? "Saving..." : app.t.save_sale}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View>
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "600",
-                color: GRAY_DARK,
-                marginBottom: 8,
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-            >
-              {app.t.category}
-            </Text>
-            <View
-              style={{
-                borderWidth: 1.5,
-                borderColor: GRAY_MID,
-                borderRadius: 10,
-                marginBottom: 16,
-                backgroundColor: GRAY_LIGHT,
-              }}
-            >
-              {EXPENSE_CATEGORIES.map((cat) => {
-                const isSel = selectedCat === cat;
-                return (
-                  <TouchableOpacity
-                    key={cat}
-                    onPress={() => setSelectedCat(cat)}
+            {/* Product list with qty controls */}
+            {app.inventory.map((item) => {
+              const qty = quantities[item.id] || 0;
+              return (
+                <View
+                  key={item.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 14,
+                    borderWidth: 1,
+                    borderColor: GRAY_MID,
+                    borderRadius: 12,
+                    marginBottom: 8,
+                    backgroundColor: qty > 0 ? GRAY_LIGHT : WHITE,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontWeight: "700", color: BLACK }}>
+                      {item.name}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: GRAY_DARK }}>
+                      1{item.sku?.includes("kg") ? "kg" : "pc"} • RWF{" "}
+                      {item.unit_price.toLocaleString()}
+                    </Text>
+                  </View>
+                  <View
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      padding: 14,
-                      backgroundColor: isSel ? BLACK : "transparent",
-                      borderRadius: 8,
-                      margin: 4,
+                      gap: 12,
                     }}
                   >
-                    <View
+                    <TouchableOpacity
+                      onPress={() =>
+                        setQuantities((prev) => ({
+                          ...prev,
+                          [item.id]: Math.max(0, (prev[item.id] || 0) - 1),
+                        }))
+                      }
                       style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 9,
-                        borderWidth: 2,
-                        borderColor: isSel ? WHITE : GRAY_DARK,
-                        backgroundColor: isSel ? WHITE : "transparent",
-                        marginRight: 10,
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: qty > 0 ? BLACK : GRAY_MID,
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      {isSel && (
-                        <View
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: 4,
-                            backgroundColor: BLACK,
-                          }}
-                        />
-                      )}
-                    </View>
+                      <Text
+                        style={{
+                          color: WHITE,
+                          fontWeight: "900",
+                          fontSize: 18,
+                          lineHeight: 20,
+                        }}
+                      >
+                        −
+                      </Text>
+                    </TouchableOpacity>
                     <Text
                       style={{
-                        fontSize: 14,
-                        fontWeight: "600",
-                        color: isSel ? WHITE : BLACK,
+                        fontSize: 16,
+                        fontWeight: "900",
+                        color: BLACK,
+                        minWidth: 20,
+                        textAlign: "center",
                       }}
                     >
-                      {cat}
+                      {qty}
                     </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: "600",
-                color: GRAY_DARK,
-                marginBottom: 8,
-                textTransform: "uppercase",
-                letterSpacing: 0.5,
-              }}
-            >
-              {app.t.amount}
-            </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setQuantities((prev) => ({
+                          ...prev,
+                          [item.id]: (prev[item.id] || 0) + 1,
+                        }))
+                      }
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: BLACK,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: WHITE,
+                          fontWeight: "900",
+                          fontSize: 18,
+                          lineHeight: 20,
+                        }}
+                      >
+                        +
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
             <TextInput
-              value={amt}
-              onChangeText={(t) => setAmt(t.replace(/[^0-9]/g, ""))}
-              placeholder="0"
-              keyboardType="numeric"
+              value={note}
+              onChangeText={setNote}
+              placeholder="e.g. Bulk discount applied.."
               style={{
-                borderWidth: 1.5,
+                borderWidth: 1,
                 borderColor: GRAY_MID,
                 borderRadius: 10,
                 padding: 14,
-                fontSize: 20,
-                fontWeight: "700",
                 color: BLACK,
-                backgroundColor: GRAY_LIGHT,
-                marginBottom: 24,
+                marginTop: 8,
               }}
             />
-
-            <TouchableOpacity
-              onPress={saveExpense}
-              disabled={loading}
+          </ScrollView>
+          {/* Sticky footer */}
+          <View
+            style={{
+              position: "absolute",
+              bottom: TAB_HEIGHT + insets.bottom,
+              left: 0,
+              right: 0,
+              backgroundColor: WHITE,
+              borderTopWidth: 1,
+              borderTopColor: GRAY_MID,
+              padding: 16,
+            }}
+          >
+            <View
               style={{
-                backgroundColor: loading ? GRAY_MID : BLACK,
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ color: GRAY_DARK }}>RUNNING TOTAL</Text>
+              <Text style={{ color: GRAY_DARK }}>
+                {itemsSelected} ITEMS SELECTED
+              </Text>
+            </View>
+            <Text
+              style={{
+                fontSize: 28,
+                fontWeight: "900",
+                color: BLACK,
+                marginBottom: 12,
+              }}
+            >
+              RWF {runningTotal.toLocaleString()}
+            </Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: BLACK,
                 borderRadius: 10,
                 paddingVertical: 16,
                 alignItems: "center",
               }}
             >
-              <Text style={{ color: WHITE, fontSize: 15, fontWeight: "700" }}>
-                {loading ? "Saving..." : app.t.save_expense}
+              <Text style={{ color: WHITE, fontWeight: "700", fontSize: 15 }}>
+                💾 Save Sale
               </Text>
             </TouchableOpacity>
           </View>
-        )}
-      </ScrollView>
+        </>
+      ) : (
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 160 }}>
+          {/* Amount */}
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: "600",
+              color: GRAY_DARK,
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              marginBottom: 8,
+            }}
+          >
+            Amount (RWF)
+          </Text>
+          <TextInput
+            value={expenseAmt}
+            onChangeText={setExpenseAmt}
+            placeholder="0"
+            keyboardType="numeric"
+            style={{
+              fontSize: 48,
+              fontWeight: "900",
+              color: expenseAmt ? BLACK : GRAY_MID,
+              marginBottom: 24,
+              textAlign: "center",
+            }}
+          />
+
+          {/* Categories */}
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: "600",
+              color: GRAY_DARK,
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              marginBottom: 12,
+            }}
+          >
+            Category
+          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 10,
+              marginBottom: 20,
+            }}
+          >
+            {EXPENSE_CATS.map((cat) => (
+              <TouchableOpacity
+                key={cat.id}
+                onPress={() => setExpenseCat(cat.id)}
+                style={{ alignItems: "center", width: 64 }}
+              >
+                <View
+                  style={{
+                    width: 56,
+                    height: 56,
+                    backgroundColor: expenseCat === cat.id ? BLACK : GRAY_LIGHT,
+                    borderRadius: 14,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 1,
+                    borderColor: expenseCat === cat.id ? BLACK : GRAY_MID,
+                  }}
+                >
+                  <MaterialIcons
+                    name={cat.icon as any}
+                    size={24}
+                    color={expenseCat === cat.id ? WHITE : BLACK}
+                  />
+                </View>
+                <Text
+                  style={{
+                    fontSize: 10,
+                    color: BLACK,
+                    marginTop: 4,
+                    fontWeight: "600",
+                  }}
+                >
+                  {cat.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Notes */}
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: "600",
+              color: GRAY_DARK,
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              marginBottom: 8,
+            }}
+          >
+            Notes
+          </Text>
+          <TextInput
+            placeholder="Add a short description..."
+            style={{
+              borderWidth: 1,
+              borderColor: GRAY_MID,
+              borderRadius: 10,
+              padding: 14,
+              color: BLACK,
+              marginBottom: 20,
+            }}
+          />
+
+          <TouchableOpacity
+            style={{
+              backgroundColor: BLACK,
+              borderRadius: 10,
+              paddingVertical: 16,
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ color: WHITE, fontWeight: "700", fontSize: 15 }}>
+              💾 Save Expense
+            </Text>
+          </TouchableOpacity>
+          <Text
+            style={{
+              color: GRAY_DARK,
+              fontSize: 11,
+              textAlign: "center",
+              marginTop: 12,
+            }}
+          >
+            Records are automatically synced to Ledger Cloud.
+          </Text>
+        </ScrollView>
+      )}
     </View>
   );
 }

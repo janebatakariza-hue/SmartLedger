@@ -1,48 +1,37 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BLACK,
   GRAY_DARK,
   GRAY_MID,
-  TAB_MENU_HEIGHT,
+  TAB_HEIGHT,
   WHITE,
-} from "../context/AppContext";
+} from "../../context/theme";
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
-
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          position: "absolute",
-          bottom: 0,
-          height:
-            Platform.OS === "web"
-              ? TAB_MENU_HEIGHT
-              : TAB_MENU_HEIGHT + insets.bottom,
+          height: TAB_HEIGHT + insets.bottom,
           borderTopWidth: 1,
           borderTopColor: GRAY_MID,
           backgroundColor: WHITE,
         },
         tabBarActiveTintColor: BLACK,
         tabBarInactiveTintColor: GRAY_DARK,
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: "600",
-          letterSpacing: 0.3,
-        },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: "600" },
       }}
     >
       <Tabs.Screen
         name="dashboard"
         options={{
-          tabBarLabel: "Dashboard",
+          tabBarLabel: "Home",
           tabBarIcon: ({ color }) => (
-            <MaterialIcons name="grid-view" size={22} color={color} />
+            <MaterialIcons name="home" size={22} color={color} />
           ),
         }}
       />
@@ -61,6 +50,15 @@ export default function TabsLayout() {
           tabBarLabel: "Inventory",
           tabBarIcon: ({ color }) => (
             <MaterialIcons name="inventory-2" size={22} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="reports"
+        options={{
+          tabBarLabel: "Reports",
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="bar-chart" size={22} color={color} />
           ),
         }}
       />
