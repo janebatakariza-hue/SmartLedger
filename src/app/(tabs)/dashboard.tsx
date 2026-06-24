@@ -3,6 +3,12 @@ import { useRouter } from "expo-router";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "../../context/AppContext";
+import { RevenueLineChart, Toast } from "../../context/components";
+import {
+  SEED_BASE_REVENUE,
+  SEED_WEEKLY_REVENUE,
+  SEED_WEEK_LABELS,
+} from "../../context/seed";
 import {
   BLACK,
   GRAY_DARK,
@@ -16,6 +22,8 @@ export default function DashboardScreen() {
   const app = useApp();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const todayRevenue = SEED_BASE_REVENUE + app.extraRevenue;
+  const lowStockCount = app.inventory.filter((i) => i.is_low_stock).length;
 
   return (
     <View style={{ flex: 1, backgroundColor: WHITE }}>
@@ -28,13 +36,15 @@ export default function DashboardScreen() {
           flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
+          borderBottomWidth: 1,
+          borderBottomColor: GRAY_MID,
         }}
       >
         <MaterialIcons name="menu" size={24} color={BLACK} />
         <Text style={{ fontSize: 18, fontWeight: "900", color: BLACK }}>
           SmartLedger
         </Text>
-        <TouchableOpacity onPress={() => router.push("../settings")}>
+        <TouchableOpacity onPress={() => router.push("../../settings")}>
           <MaterialIcons name="account-circle" size={28} color={BLACK} />
         </TouchableOpacity>
       </View>
@@ -45,16 +55,22 @@ export default function DashboardScreen() {
           paddingBottom: TAB_HEIGHT + insets.bottom + 20,
         }}
       >
-        {/* Date + greeting */}
+        {/* Greeting */}
         <Text
           style={{
             fontSize: 11,
             color: GRAY_DARK,
             textTransform: "uppercase",
             letterSpacing: 1,
+            marginTop: 16,
           }}
         >
-          Monday, 24 May 2024
+          {new Date().toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
         </Text>
         <Text
           style={{
@@ -64,7 +80,8 @@ export default function DashboardScreen() {
             marginTop: 2,
           }}
         >
-          Good morning,{"\n"}
+          {app.t.welcome}
+          {"\n"}
           {app.userName}
         </Text>
 
@@ -87,44 +104,47 @@ export default function DashboardScreen() {
               letterSpacing: 0.8,
             }}
           >
-            Today's Revenue
-          </Text>
-          <Text
-            style={{
-              fontSize: 36,
-              fontWeight: "900",
-              color: BLACK,
-              marginTop: 4,
-            }}
-          >
-            RWF 458,200
-          </Text>
-          <Text style={{ color: GRAY_DARK, fontSize: 12, marginTop: 4 }}>
-            vs RWF 350,000 yesterday
+            {app.t.revenue}
           </Text>
           <View
             style={{
-              position: "absolute",
-              top: 20,
-              right: 20,
-              backgroundColor: BLACK,
-              borderRadius: 20,
-              paddingHorizontal: 10,
-              paddingVertical: 4,
+              flexDirection: "row",
+              alignItems: "flex-end",
+              justifyContent: "space-between",
+              marginTop: 4,
             }}
           >
-            <Text style={{ color: WHITE, fontSize: 12, fontWeight: "700" }}>
-              72%
+            <Text style={{ fontSize: 32, fontWeight: "900", color: BLACK }}>
+              RWF {todayRevenue.toLocaleString()}
             </Text>
+            <View
+              style={{
+                backgroundColor: BLACK,
+                borderRadius: 20,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+              }}
+            >
+              <Text style={{ color: WHITE, fontSize: 12, fontWeight: "700" }}>
+                72%
+              </Text>
+            </View>
           </View>
+          <Text style={{ color: GRAY_DARK, fontSize: 12, marginTop: 4 }}>
+            vs RWF 350,000 yesterday
+          </Text>
         </View>
 
         {/* Stats row */}
         <View style={{ flexDirection: "row", marginTop: 12, gap: 8 }}>
           {[
-            { label: "Sales", value: "42", sub: "Orders" },
-            { label: "Debts", value: "12", sub: "Pending" },
-            { label: "Low Stock", value: "08", sub: "", alert: true },
+            { label: "SALES", value: "42", sub: "Orders" },
+            { label: "DEBTS", value: "12", sub: "Pending" },
+            {
+              label: "LOW STOCK",
+              value: String(lowStockCount).padStart(2, "0"),
+              sub: "",
+            },
           ].map((s) => (
             <View
               key={s.label}
@@ -137,10 +157,14 @@ export default function DashboardScreen() {
                 borderColor: GRAY_MID,
               }}
             >
-              <Text style={{ fontSize: 11, color: GRAY_DARK }}>{s.label}</Text>
+              <Text
+                style={{ fontSize: 10, color: GRAY_DARK, fontWeight: "600" }}
+              >
+                {s.label}
+              </Text>
               <Text
                 style={{
-                  fontSize: 22,
+                  fontSize: 24,
                   fontWeight: "900",
                   color: BLACK,
                   marginTop: 4,
@@ -148,12 +172,14 @@ export default function DashboardScreen() {
               >
                 {s.value}
               </Text>
-              <Text style={{ fontSize: 10, color: GRAY_DARK }}>{s.sub}</Text>
+              {s.sub ? (
+                <Text style={{ fontSize: 10, color: GRAY_DARK }}>{s.sub}</Text>
+              ) : null}
             </View>
           ))}
         </View>
 
-        {/* 7-Day Trend chart placeholder */}
+        {/* 7-Day Trend with real chart */}
         <View
           style={{
             backgroundColor: WHITE,
@@ -168,7 +194,7 @@ export default function DashboardScreen() {
             style={{
               flexDirection: "row",
               justifyContent: "space-between",
-              marginBottom: 12,
+              marginBottom: 4,
             }}
           >
             <Text style={{ fontWeight: "700", color: BLACK }}>7-Day Trend</Text>
@@ -186,36 +212,14 @@ export default function DashboardScreen() {
               <Text style={{ fontSize: 11, color: GRAY_DARK }}>Revenue</Text>
             </View>
           </View>
-          {/* Replace with a real LineChart from victory-native or react-native-svg-charts */}
-          <View
-            style={{
-              height: 100,
-              backgroundColor: GRAY_LIGHT,
-              borderRadius: 8,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ color: GRAY_DARK, fontSize: 12 }}>
-              Line chart goes here
-            </Text>
-          </View>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              marginTop: 8,
-            }}
-          >
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-              <Text key={d} style={{ fontSize: 10, color: GRAY_DARK }}>
-                {d}
-              </Text>
-            ))}
-          </View>
+          <RevenueLineChart
+            data={SEED_WEEKLY_REVENUE}
+            labels={SEED_WEEK_LABELS}
+            height={100}
+          />
         </View>
 
-        {/* Quick action buttons */}
+        {/* Quick actions */}
         <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/record")}
@@ -252,7 +256,60 @@ export default function DashboardScreen() {
             <Text style={{ color: BLACK, fontWeight: "700" }}>Stock Count</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Quick nav links */}
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+          {[
+            {
+              label: "Suppliers",
+              icon: "local-shipping",
+              route: "/(modals)/suppliers",
+            },
+            {
+              label: "Customers",
+              icon: "people",
+              route: "/(modals)/customers",
+            },
+            {
+              label: "Debts",
+              icon: "account-balance-wallet",
+              route: "/(modals)/debt-tracker",
+            },
+            { label: "Vault", icon: "folder", route: "/(modals)/vault" },
+          ].map((link) => (
+            <TouchableOpacity
+              key={link.label}
+              onPress={() => router.push(link.route as any)}
+              style={{
+                flex: 1,
+                backgroundColor: GRAY_LIGHT,
+                borderRadius: 10,
+                padding: 12,
+                alignItems: "center",
+                borderWidth: 1,
+                borderColor: GRAY_MID,
+              }}
+            >
+              <MaterialIcons name={link.icon as any} size={20} color={BLACK} />
+              <Text
+                style={{
+                  fontSize: 10,
+                  color: BLACK,
+                  fontWeight: "600",
+                  marginTop: 4,
+                }}
+              >
+                {link.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
+
+      <Toast
+        msg={app.toastMsg}
+        bottomOffset={TAB_HEIGHT + insets.bottom + 16}
+      />
     </View>
   );
 }
