@@ -20,7 +20,6 @@ expo-env.d.ts
 
 # Metro
 .metro-health-check*
-temp_auto_push.bat
 
 # debug
 npm-debug.*
@@ -44,3 +43,4 @@ example
 /android
 branch_structure.json
 .gitignore
+config.bat
